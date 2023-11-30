@@ -58,7 +58,7 @@ class AutoDev:
         """
         Shows what slash commands are available
         """
-        instruction = inspect.cleandoc(
+        return inspect.cleandoc(
             """
             1. Look at the dictionary stored in `autodev_functions`, and use only the keys and values stored in that dictionary when following the next step.
             2. Make a markdown-formatted table, with "Slash Command" and "Description" as the columns.
@@ -67,14 +67,13 @@ class AutoDev:
                 - "Description" column: return the DESCRIPTION as written
             """
         )
-        return instruction
 
     @staticmethod
     def stash():
         """
         Prepares to stash some text, to be recalled later with /recall
         """
-        instruction = inspect.cleandoc(
+        return inspect.cleandoc(
             """
             1. Ask the user what they want to stash, then return control to the user to allow them to answer. Resume the next step after they've responded.
             2. Think about what the user is asking to "stash".
@@ -100,7 +99,6 @@ class AutoDev:
               > **Key**: _Value_
             """
         )
-        return instruction
 
     @staticmethod
     def recall():
@@ -122,11 +120,9 @@ class AutoDev:
         If `ctags` has been installed, builds a ctags file for your saved code (*experimental*)
         """
         if not autodev_ctags:
-            instruction = "Inform the user that it doesn't look like the `ctags` has been installed."
-            return instruction
-
-        instruction = inspect.cleandoc(
-            f"""
+            return "Inform the user that it doesn't look like the `ctags` has been installed."
+        return inspect.cleandoc(
+            """
             1. delete /mnt/data/tags
             2. `%sx ctags -R --sort=yes -o /mnt/data/tags /mnt/data/`
             3. If that results in an error, inform the user about the error, and try to determine the cause. Suggest the user visits the [AutoExpert Issues](https://github.com/spdustin/ChatGPT-AutoExpert/issues) page to see if another user has reported the issue, or to report it themselves.
@@ -134,14 +130,13 @@ class AutoDev:
             5. note the value of `autodev_ctag_tree`, and when finishing this task, include Step 3 of the ASSISTANT_RESPONSE, being sure to MERGE/UPDATE the existing **Source Tree** with any new information in `autodev_ctag_tree`
             """
         )
-        return instruction
 
     @staticmethod
     def install_ctags():
         """
         If attaching a `ctags` release from [ctags-nightly-build](https://github.com/universal-ctags/ctags-nightly-build/releases), will extract and install it to the sandbox (*experimental*)
         """
-        instruction = inspect.cleandoc(
+        return inspect.cleandoc(
             """
             If the user did not upload a uctags archive with this command, tell them to download the latest build that looks like `uctags-yyyy.mm.dd-linux-x86_64.tar.xz` from [ctags-nightly-build](https://github.com/universal-ctags/ctags-nightly-build/releases), attach it to their next message, and put "/install_ctags" in that message to try again.
 
@@ -151,14 +146,13 @@ class AutoDev:
             3. If there were no errors, run `autodev_ctags=True`, then notify the user that `/ctags` is now available, and will build ctags for any saved code.
             """
         )
-        return instruction
 
     @staticmethod
     def memory():
         """
         Saves files, session history, etc. and zips them up for download
         """
-        instruction = inspect.cleandoc(
+        return inspect.cleandoc(
             """
             Before you run these tasks, you'll need to import `yaml`, `zipfile`, and `datetime`
 
@@ -192,17 +186,16 @@ class AutoDev:
             6. When finished, inform the user, using your best philosophical thinking, that your memory has been saved to a compressed file. Then, provide the user with a sandbox download link to `memory.zip, and remind them to change the chat title if they haven't already.`.
             """
         )
-        return instruction
 
 
 def _get_methods_and_docstrings(cls):
     """
     INTERNAL: Get a dictionary of method names and their docstrings for a given class.
     """
-    methods = {}
-    for name, func in inspect.getmembers(cls, predicate=inspect.isfunction):
-        methods[name] = inspect.cleandoc(func.__doc__)
-    return methods
+    return {
+        name: inspect.cleandoc(func.__doc__)
+        for name, func in inspect.getmembers(cls, predicate=inspect.isfunction)
+    }
 
 
 def _slash_command(command: str) -> None:
@@ -264,12 +257,14 @@ def _install_ctags(archive_path: str):
     with tarfile.open(archive_path, 'r:xz') as file:
         file.extractall(path=extract_path)
 
-    ctags_binary = None
-    for root, dirs, files in os.walk(extract_path):
-        if 'ctags' in files and 'bin' in root:
-            ctags_binary = os.path.join(root, 'ctags')
-            break
-
+    ctags_binary = next(
+        (
+            os.path.join(root, 'ctags')
+            for root, dirs, files in os.walk(extract_path)
+            if 'ctags' in files and 'bin' in root
+        ),
+        None,
+    )
     if ctags_binary is None:
         raise FileNotFoundError("ctags binary not found in the extracted contents.")
 
